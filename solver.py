@@ -1,18 +1,31 @@
 from pprint import pprint
+import time
 
 from parser import Parser, calcDistance, generatorPossibleStarts
 
 class Solver(Parser):
     def __init__(self, f):
         super().__init__(f)
+        print('Parsed')
+        print(self.latest_finishs)
+        #pprint(self.timeline_earliest_start)
         self.findAllPossibleNextPassengers()
         #pprint(self.passengers)
         #self.solve()
    
     def findAllPossibleNextPassengers(self):
+        i = 0
+        last_time = time.time()
         for passenger in self.passengers:
             pid = passenger['id']
             self.findPossibleNextPassengers(pid)
+            if i % 100 == 0:
+                now = time.time()
+                print(i, now - last_time)
+                last_time = now
+            if i > 5000:
+                break
+            i += 1
 
     def findPossibleNextPassengers(self, pid):
         """
@@ -24,15 +37,21 @@ class Solver(Parser):
         """
         passenger = self.passengers[pid]
         passenger['possible_next_passengers'] = {}
-        for next_pids in self.timeline_latest_finish[passenger['earliest_finish']:]:
-            for next_pid in next_pids:
+        for step in self.latest_finishs:
+            if step < passenger['earliest_finish']:
+                continue
+            for next_pid in self.timeline_latest_finish[step]:
                 if next_pid == pid:
-                    continue
+                        continue
                 next_passenger = self.passengers[next_pid]
                 distance_between = calcDistance(passenger['end_point'], next_passenger['start_point'])
-                start_times = [i for i in range(passenger['earliest_finish'], next_passenger['latest_start'] - distance_between + 1)]
-                if len(start_times) > 0:
-                    passenger['possible_next_passengers'][next_pid] = start_times
+                if next_passenger['latest_start'] - distance_between < passenger['earliest_finish']:
+                    continue
+                arrival_range = (
+                    passenger['earliest_finish'] + distance_between,
+                    passenger['latest_start'] + distance_between
+                )
+                passenger['possible_next_passengers'][next_pid] = arrival_range
 
     def solve(self):
         for carId in self.config['cars']:
