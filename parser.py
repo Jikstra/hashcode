@@ -13,6 +13,7 @@ class Parser:
 
             self.timeline_earliest_start = [[] for i in range(0, self.config['steps'])]
             self.timeline_latest_finish = [[] for i in range(0, self.config['steps'])]
+            self.timeline_possible_start = [[] for i in range(0, self.config['steps'])]
 
             id = 0
             for l in infile:
@@ -28,9 +29,9 @@ class Parser:
     def timelineAdd(self, pid):
         passenger = self.passengers[pid]
         self.timeline_earliest_start[passenger['earliest_start']].append(pid)
-        self.timeline_latest_finish[passenger['latest_finish']].append(pid)
-
-
+        try:
+            self.timeline_latest_finish[passenger['latest_finish']].append(pid)
+            
 
     def __repr__(self):
         s = 'config: %s\npassengers: %s\ntimeline_latest_finish: %s\ntimeline_earliest_start: %s' % (
@@ -56,13 +57,21 @@ def parsePassengerLine(line, id):
     splitted_line = splitLineToInts(line)
     start_point = parseCoordinate(splitted_line[0], splitted_line[1])
     end_point = parseCoordinate(splitted_line[2], splitted_line[3])
+    earliest_start = splitted_line[4]
+    latest_finish = splitted_line[5]
+    distance = calcDistance(start_point, end_point)
+    earliest_finish = earliest_start + distance
+    latest_start = latest_finish - distance
+
     return {
         'id': id,
         'start_point': start_point,
         'end_point': end_point,
-        'earliest_start': splitted_line[4],
-        'latest_finish': splitted_line[5],
-        'distance': calcDistance(start_point, end_point)
+        'earliest_start': earliest_start,
+        'latest_start': latest_start,
+        'earliest_finish': earliest_finish,
+        'latest_finish': latest_finish,
+        'distance': distance,
     }
 
 def calcDistance(a, b):
@@ -82,6 +91,10 @@ def parseCoordinate(x, y):
 
 def splitLineToInts(l):
     return list(map(lambda s: int(s), l.strip().split(" ")))
+
+def generatorPossibleStarts(passenger):
+    for possible_start in range(passenger['earliest_start'], passenger['latest_start']):
+        yield possible_start
 
 if __name__ == '__main__':
     parser = Parser('example_in.txt')
