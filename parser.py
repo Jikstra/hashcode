@@ -6,11 +6,13 @@ class Parser:
         self.passengers = []
         self.timeline_latest_finish = []
         self.timeline_earliest_start = []
+        self.timeline_latest_start = []
         self.timeline_finishs = []
-        self.latest_finishs = set()
+        self.latest_starts = set()
 
         self.parse(f)
         print('Parsed')
+        self.latest_starts = sorted(self.latest_starts)
 
     def parse(self, f):
         with open(f, 'r') as infile:
@@ -19,6 +21,7 @@ class Parser:
             self.timeline_earliest_start = [[] for i in range(0, self.config['steps']+1)]
             self.timeline_latest_finish = [[] for i in range(0, self.config['steps']+1)]
             self.timeline_possible_start = [[] for i in range(0, self.config['steps']+1)]
+            self.timeline_latest_start = [[] for i in range(0, self.config['steps']+1)]
 
             id = 0
             for l in infile:
@@ -26,16 +29,18 @@ class Parser:
                 if passenger['distance'] > (passenger['latest_finish'] - passenger['earliest_start']):
                     print('Skipping undeliverable passenger %s' %passenger)
                     continue
-                self.latest_finishs.add(passenger['latest_finish'])
-
+                self.latest_starts.add(passenger['latest_start'])
+                self.timeline_latest_start[passenger['latest_start']].append(id)
                 self.passengers.append(passenger)
-                self.timelineAdd(id)
                 id += 1
 
     def timelineAdd(self, pid):
         passenger = self.passengers[pid]
         self.timeline_earliest_start[passenger['earliest_start']].append(pid)
         self.timeline_latest_finish[passenger['latest_finish']].append(pid)
+        print(passenger['latest_start'])
+        self.timeline_latest_start[passenger['latest_start']].append(pid)
+
 
     def __repr__(self):
         s = 'config: %s\npassengers: %s\ntimeline_latest_finish: %s\ntimeline_earliest_start: %s' % (
